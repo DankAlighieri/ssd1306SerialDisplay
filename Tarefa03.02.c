@@ -33,11 +33,11 @@ static volatile uint8_t number;
 static volatile bool led_g_state = false;
 static volatile bool led_b_state = false;
 
-static volatile bool display_ligado_led = false;
-
+// variáveis para configurar a matriz de leds 
 PIO pio;
 uint sm;
 
+// Variável para manipular o display
 uint8_t ssd[ssd1306_buffer_length];
 
 // Prepara o canva do display
@@ -48,6 +48,7 @@ struct render_area frame_area = {
     end_page : ssd1306_n_pages - 1
 };
 
+// Prototipos de funcoes
 static void gpio_irq_handler(uint gpio, uint32_t events);
 
 static bool debounce_time(uint32_t *last_time);
@@ -73,6 +74,7 @@ int main() {
 
     stdio_init_all();
 
+    // Inicializando componentes
     button_init(BTN_A);
     button_init(BTN_B);
     led_init(LED_G);
@@ -98,15 +100,17 @@ int main() {
     uart_set_irq_enables(uart0, true, false);
    */
    
-    // Inicializando display oled
+    // Configurando os componentes do display para incializá-lo
     i2c_init(i2c1, ssd1306_i2c_clock * 1000);
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SDL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_SDA);
     gpio_pull_up(I2C_SDL);
 
+    // Display inicializado
     ssd1306_init();
 
+    // Encontrando area de renderização do display
     calculate_render_area_buffer_length(&frame_area);
 
     // zera o display inteiro
@@ -124,18 +128,17 @@ int main() {
         scanf("%c", &input);
         printf("%c", input);
 
-        if(display_ligado_led) {
-            memset(ssd, 0, ssd1306_buffer_length);
-            render_on_display(ssd, &frame_area);
-            display_ligado_led = false;
-        }
-                
+        // Limpa o display para não exibir informação antiga
+        memset(ssd, 0, ssd1306_buffer_length);
+        
+        // Verificação para saber se é número ou não
         if (input >= '0' && input <= '9'){
             imprimir_desenho(*numeros[input - '0'], pio, sm);
         } else {
             imprimir_desenho(*numeros[10], pio, sm);
         }
 
+        // Renderizando o input no display
         ssd1306_draw_char(ssd, 10, 10, input);
         render_on_display(ssd, &frame_area);    
         sleep_ms(300);
@@ -145,10 +148,13 @@ int main() {
 static void gpio_irq_handler(uint gpio, uint32_t events) {
     uint32_t current_time = to_us_since_boot(get_absolute_time());
 
-    char *text[4] ={ "", "" };
+    // Inicializando ponteiro para vetor de strings
+    char *text[2] ={ "", "" };
 
+    // Realizando debounce
     if(debounce_time(&last_time)) {
-        if(gpio == BTN_A) {     
+        // Botão A pressionado
+        if(gpio == BTN_A) {  
             led_g_state = !led_g_state;
             gpio_put(LED_G, led_g_state);
 
@@ -161,7 +167,7 @@ static void gpio_irq_handler(uint gpio, uint32_t events) {
                 text[1] = "  desligado  ";
                 printf("LED verde desligado\n");
             }
-        } else if (gpio == BTN_B) {
+        } else if (gpio == BTN_B) { // Botão B pressionado
             led_b_state = !led_b_state;
             gpio_put(LED_B, led_b_state);
 
@@ -175,8 +181,9 @@ static void gpio_irq_handler(uint gpio, uint32_t events) {
                 printf("LED azul desligado\n");
             }
         }
-        display_ligado_led = true;
     }
+    
+    // Renderizando o texto no display
     int y = 0;
     for(uint8_t i = 0; i < count_of(text); i++) {
         ssd1306_draw_string(ssd, 5, y, text[i]);
