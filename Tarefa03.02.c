@@ -13,8 +13,10 @@
 
 #define I2C_SDA 14
 #define I2C_SDL 15
+/*
 #define UART_TX 0
 #define UART_RX 1
+*/
 #define BTN_A 5
 #define BTN_B 6
 #define LED_G 11
@@ -30,6 +32,8 @@ static volatile uint8_t number;
 
 static volatile bool led_g_state = false;
 static volatile bool led_b_state = false;
+
+static volatile bool display_ligado_led = false;
 
 PIO pio;
 uint sm;
@@ -47,22 +51,26 @@ struct render_area frame_area = {
 static void gpio_irq_handler(uint gpio, uint32_t events);
 
 static bool debounce_time(uint32_t *last_time);
+/*
 
 void on_uart_rx() {
     while(uart_is_readable(uart0)){
         char c = uart_getc(uart0);
-        if (c >= '0' || c <= '9'){
-            printf("Received: %d", c);
-            imprimir_desenho(*numeros[c], pio, sm);
+        uart_char_received = true;
+        uart_char = c;
+        if (c >= '0' && c <= '9'){
+            imprimir_desenho(*numeros[c - '0'], pio, sm);
         } else {
-            printf("Received: %c", c);
             ssd1306_draw_char(ssd, 10, 10, c);
             render_on_display(ssd, &frame_area);    
         }
     }
 }
+*/
 
 int main() {
+    char input;
+
     stdio_init_all();
 
     button_init(BTN_A);
@@ -77,6 +85,7 @@ int main() {
     // inicializando uart
     uart_init(uart0, 115200);
 
+   /*
     gpio_set_function(UART_TX, GPIO_FUNC_UART); // Configurando TX
     gpio_set_function(UART_RX, GPIO_FUNC_UART); // Configurando RX
 
@@ -87,6 +96,7 @@ int main() {
     irq_set_enabled(UART0_IRQ, true);
 
     uart_set_irq_enables(uart0, true, false);
+   */
    
     // Inicializando display oled
     i2c_init(i2c1, ssd1306_i2c_clock * 1000);
@@ -103,13 +113,32 @@ int main() {
     memset(ssd, 0, ssd1306_buffer_length);
     render_on_display(ssd, &frame_area);
 
+    // desliga todos os leds da matriz
+    imprimir_desenho(*numeros[10], pio, sm);
+
     // Ativando interrupcoes para os botoes
     gpio_set_irq_enabled_with_callback(BTN_A, GPIO_IRQ_EDGE_FALL, true, gpio_irq_handler);
     gpio_set_irq_enabled_with_callback(BTN_B, GPIO_IRQ_EDGE_FALL, true, gpio_irq_handler);
 
     while (true) {
-        uart_putc(uart0, 'A');
-        sleep_ms(1000);
+        scanf("%c", &input);
+        printf("%c", input);
+
+        if(display_ligado_led) {
+            memset(ssd, 0, ssd1306_buffer_length);
+            render_on_display(ssd, &frame_area);
+            display_ligado_led = false;
+        }
+                
+        if (input >= '0' && input <= '9'){
+            imprimir_desenho(*numeros[input - '0'], pio, sm);
+        } else {
+            imprimir_desenho(*numeros[10], pio, sm);
+        }
+
+        ssd1306_draw_char(ssd, 10, 10, input);
+        render_on_display(ssd, &frame_area);    
+        sleep_ms(300);
     }
 }
 
@@ -126,9 +155,11 @@ static void gpio_irq_handler(uint gpio, uint32_t events) {
             if (led_g_state) {
                 text[0] = "  LED Verde  ";
                 text[1] = "   ligado  ";
+                printf("LED verde ligado\n");
             } else {
                 text[0] = "  LED Verde  ";
                 text[1] = "  desligado  ";
+                printf("LED verde desligado\n");
             }
         } else if (gpio == BTN_B) {
             led_b_state = !led_b_state;
@@ -137,11 +168,14 @@ static void gpio_irq_handler(uint gpio, uint32_t events) {
             if (led_b_state) {
                 text[0] = "  LED Azul  ";
                 text[1] = "   ligado  ";
+                printf("LED azul ligado\n");
             } else {
                 text[0] = "  LED Azul  ";
                 text[1] = "  desligado  ";
+                printf("LED azul desligado\n");
             }
         }
+        display_ligado_led = true;
     }
     int y = 0;
     for(uint8_t i = 0; i < count_of(text); i++) {
