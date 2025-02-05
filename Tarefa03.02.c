@@ -52,8 +52,8 @@ struct render_area frame_area = {
 static void gpio_irq_handler(uint gpio, uint32_t events);
 
 static bool debounce_time(uint32_t *last_time);
-/*
 
+/*
 void on_uart_rx() {
     while(uart_is_readable(uart0)){
         char c = uart_getc(uart0);
@@ -84,10 +84,10 @@ int main() {
     pio = pio0;
     sm = configurar_matriz(pio, MATRIX_PIN);
     
+/*    
     // inicializando uart
     uart_init(uart0, 115200);
 
-   /*
     gpio_set_function(UART_TX, GPIO_FUNC_UART); // Configurando TX
     gpio_set_function(UART_RX, GPIO_FUNC_UART); // Configurando RX
 
@@ -98,7 +98,7 @@ int main() {
     irq_set_enabled(UART0_IRQ, true);
 
     uart_set_irq_enables(uart0, true, false);
-   */
+*/
    
     // Configurando os componentes do display para incializá-lo
     i2c_init(i2c1, ssd1306_i2c_clock * 1000);
@@ -182,7 +182,7 @@ static void gpio_irq_handler(uint gpio, uint32_t events) {
             }
         }
     }
-    
+
     // Renderizando o texto no display
     int y = 0;
     for(uint8_t i = 0; i < count_of(text); i++) {
