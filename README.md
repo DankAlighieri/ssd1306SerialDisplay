@@ -64,6 +64,10 @@ Desenvolvido em C utilizando:
 
 [Vídeo demonstrativo do projeto](https://drive.google.com/file/d/1Fbk44jD_cP-Oth_4zdp8DUDqRbpXiYhu/view?usp=sharing)
 
+## Como executar
+
+O Projeto pode ser executado clonando este repositório e importando como projeto pico no Visual Studio Code
+
 ## 👥 Autoria
 
 **Guilherme Emetério Santos Lima**  
